@@ -4,16 +4,14 @@ let yearCalendarData = {};
 let userEvents = {};
 let selectedDate = null;
 
-// Firebase数据库引用
-let eventsRef;
-
 // 事件类型颜色映射
 const EVENT_COLORS = {
     'school': '#5B9BD5',
     'public': '#7030A0', 
     'islamic': '#00B050',
     'christian': '#FF0000',
-    'back_to_school': '#FFFF00'
+    'back_to_school': '#FFFF00',
+    'custom': '#5B9BD5'
 };
 
 // 事件类型英文名称映射
@@ -22,7 +20,8 @@ const EVENT_TYPE_NAMES = {
     'public': 'Public Holiday',
     'islamic': 'Islamic Holiday', 
     'christian': 'Christian Holiday',
-    'back_to_school': 'Back to School'
+    'back_to_school': 'Back to School',
+    'custom': 'Custom Event'
 };
 
 // 月份名称映射
@@ -36,23 +35,9 @@ const WEEKDAY_ABBR = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 // DOM加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
-    // 等待Firebase初始化
-    if (window.firebaseDB) {
-        eventsRef = window.firebaseDB.eventsRef;
-        initializeCalendar();
-        setupEventListeners();
-        loadUserEventsFromFirebase();
-        setupFirebaseListeners();
-    } else {
-        // 如果Firebase未加载，等待一下再试
-        setTimeout(() => {
-            eventsRef = window.firebaseDB.eventsRef;
-            initializeCalendar();
-            setupEventListeners();
-            loadUserEventsFromFirebase();
-            setupFirebaseListeners();
-        }, 1000);
-    }
+    initializeCalendar();
+    setupEventListeners();
+    loadUserEvents();
 });
 
 // 初始化日历
@@ -66,51 +51,58 @@ function initializeCalendar() {
 }
 
 // 加载可用年份
-function loadAvailableYears() {
-    fetch('/api/years')
-        .then(response => response.json())
-        .then(years => {
-            const yearSelect = document.getElementById('year-select');
-            yearSelect.innerHTML = '';
-            
-            years.forEach(year => {
-                const option = document.createElement('option');
-                option.value = year;
-                option.textContent = year + '年';
-                if (year === currentYear) {
-                    option.selected = true;
-                }
-                yearSelect.appendChild(option);
-            });
-        })
-        .catch(error => {
-            console.error('加载年份失败:', error);
+async function loadAvailableYears() {
+    try {
+        const years = await window.calendarAPI.getAvailableYears();
+        const yearSelect = document.getElementById('year-select');
+        yearSelect.innerHTML = '';
+        
+        years.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year + '年';
+            if (year === currentYear) {
+                option.selected = true;
+            }
+            yearSelect.appendChild(option);
         });
+    } catch (error) {
+        console.error('加载年份失败:', error);
+    }
 }
 
 // 加载全年日历数据
-function loadYearCalendarData(year) {
-    const promises = [];
-    
-    // 加载12个月的数据
-    for (let month = 1; month <= 12; month++) {
-        promises.push(
-            fetch(`/api/calendar/${year}/${month}`)
-                .then(response => response.json())
-                .then(data => {
-                    yearCalendarData[month] = data;
-                })
-        );
+async function loadYearCalendarData(year) {
+    try {
+        const promises = [];
+        
+        // 加载12个月的数据
+        for (let month = 1; month <= 12; month++) {
+            promises.push(
+                window.calendarAPI.getCalendarData(year, month)
+                    .then(data => {
+                        yearCalendarData[month] = data;
+                    })
+            );
+        }
+        
+        await Promise.all(promises);
+        renderYearCalendar();
+    } catch (error) {
+        console.error('加载年度日历数据失败:', error);
     }
-    
-    Promise.all(promises)
-        .then(() => {
-            renderYearCalendar();
-            updateAllEventsLists(); // 添加这行
-        })
-        .catch(error => {
-            console.error('加载年度日历数据失败:', error);
-        });
+}
+
+// 加载用户事件
+async function loadUserEvents() {
+    try {
+        const events = await window.calendarAPI.getEvents();
+        userEvents = events || {};
+        renderYearCalendar(); // 重新渲染以显示用户事件
+    } catch (error) {
+        console.error('加载用户事件失败:', error);
+        userEvents = {};
+    }
 }
 
 // 渲染全年日历
