@@ -4,6 +4,9 @@ let yearCalendarData = {};
 let userEvents = {};
 let selectedDate = null;
 
+// Firebase数据库引用
+let eventsRef;
+
 // 事件类型颜色映射
 const EVENT_COLORS = {
     'school': '#5B9BD5',
@@ -33,9 +36,23 @@ const WEEKDAY_ABBR = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 // DOM加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
-    initializeCalendar();
-    setupEventListeners();
-    loadUserEvents();
+    // 等待Firebase初始化
+    if (window.firebaseDB) {
+        eventsRef = window.firebaseDB.eventsRef;
+        initializeCalendar();
+        setupEventListeners();
+        loadUserEventsFromFirebase();
+        setupFirebaseListeners();
+    } else {
+        // 如果Firebase未加载，等待一下再试
+        setTimeout(() => {
+            eventsRef = window.firebaseDB.eventsRef;
+            initializeCalendar();
+            setupEventListeners();
+            loadUserEventsFromFirebase();
+            setupFirebaseListeners();
+        }, 1000);
+    }
 });
 
 // 初始化日历
@@ -426,14 +443,8 @@ function saveEvent() {
         currentDate.setDate(currentDate.getDate() + 1);
     }
     
-    // 保存到本地存储
-    saveUserEvents();
-    
-    // 重新渲染日历
-    renderYearCalendar();
-    
-    // 更新所有事件列表
-    updateAllEventsLists();
+    // 保存到Firebase
+    saveUserEventsToFirebase();
     
     // 关闭模态窗口
     closeEventModal();
@@ -443,36 +454,64 @@ function saveEvent() {
 function deleteEvent() {
     if (selectedDate && userEvents[selectedDate]) {
         delete userEvents[selectedDate];
-        // 在 saveEvent 函数末尾
-        saveUserEvents();
-        renderYearCalendar();
-        updateAllEventsLists();
-        closeEventModal();
         
-        // 在 deleteEvent 函数末尾
-        saveUserEvents();
-        renderYearCalendar();
-        updateAllEventsLists();
+        // 保存到Firebase
+        saveUserEventsToFirebase();
+        
         closeEventModal();
     }
 }
 
-// 保存用户事件到本地存储
-function saveUserEvents() {
-    localStorage.setItem('calendarUserEvents', JSON.stringify(userEvents));
+// 替换原来的saveUserEvents函数
+function saveUserEventsToFirebase() {
+    if (!eventsRef) return;
+    
+    // 直接设置整个events节点
+    eventsRef.set(userEvents).then(() => {
+        console.log('事件已保存到Firebase');
+    }).catch((error) => {
+        console.error('保存事件失败:', error);
+        alert('保存失败，请检查网络连接');
+    });
 }
 
-// 从本地存储加载用户事件
-function loadUserEvents() {
-    const saved = localStorage.getItem('calendarUserEvents');
-    if (saved) {
-        try {
-            userEvents = JSON.parse(saved);
-        } catch (error) {
-            console.error('加载用户事件失败:', error);
+// 替换原来的loadUserEvents函数
+function loadUserEventsFromFirebase() {
+    if (!eventsRef) return;
+    
+    eventsRef.once('value').then((snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            userEvents = data;
+        } else {
             userEvents = {};
         }
-    }
+        // 加载完成后渲染日历
+        renderYearCalendar();
+        updateAllEventsLists();
+    }).catch((error) => {
+        console.error('加载事件失败:', error);
+        userEvents = {};
+        renderYearCalendar();
+        updateAllEventsLists();
+    });
+}
+
+// 设置Firebase实时监听器
+function setupFirebaseListeners() {
+    if (!eventsRef) return;
+    
+    eventsRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            userEvents = data;
+        } else {
+            userEvents = {};
+        }
+        // 实时更新UI
+        renderYearCalendar();
+        updateAllEventsLists();
+    });
 }
 
 // 下载日历功能
