@@ -1,200 +1,216 @@
-// 全局变量
+// Global variables
 let currentYear = new Date().getFullYear();
+let selectedDate = null;
 let yearCalendarData = {};
 let userEvents = {};
-let selectedDate = null;
 
-// 事件类型颜色映射
-const EVENT_COLORS = {
-    'school': '#5B9BD5',
-    'public': '#7030A0', 
-    'islamic': '#00B050',
-    'christian': '#FF0000',
-    'back_to_school': '#FFFF00',
-    'custom': '#5B9BD5'
-};
-
-// 事件类型英文名称映射
+// Event type mappings
 const EVENT_TYPE_NAMES = {
-    'school': 'School Holiday',
-    'public': 'Public Holiday',
-    'islamic': 'Islamic Holiday', 
-    'christian': 'Christian Holiday',
-    'back_to_school': 'Back to School',
-    'custom': 'Custom Event'
+    'holiday': '节假日',
+    'work': '工作日',
+    'personal': '个人事件',
+    'meeting': '会议',
+    'birthday': '生日',
+    'anniversary': '纪念日',
+    'other': '其他'
 };
 
-// 月份名称映射
+// Event colors
+const EVENT_COLORS = {
+    'holiday': '#ff6b6b',
+    'work': '#4ecdc4',
+    'personal': '#45b7d1',
+    'meeting': '#96ceb4',
+    'birthday': '#feca57',
+    'anniversary': '#ff9ff3',
+    'other': '#a8a8a8'
+};
+
+// Month names
 const MONTH_NAMES = [
-    'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
-    'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
+    '一月', '二月', '三月', '四月', '五月', '六月',
+    '七月', '八月', '九月', '十月', '十一月', '十二月'
 ];
 
-// 星期缩写
-const WEEKDAY_ABBR = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+// Weekday abbreviations
+const WEEKDAY_ABBR = ['日', '一', '二', '三', '四', '五', '六'];
 
-// DOM加载完成后初始化
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeCalendar();
     setupEventListeners();
-    loadUserEvents();
 });
 
-// 初始化日历
+// Initialize calendar
 function initializeCalendar() {
-    // 确保年份在有效范围内
-    if (currentYear < 2025) currentYear = 2025;
-    if (currentYear > 2035) currentYear = 2035;
-    
     loadAvailableYears();
     loadYearCalendarData(currentYear);
+    loadUserEvents();
 }
 
-// 加载可用年份
-async function loadAvailableYears() {
-    try {
-        const years = await window.calendarAPI.getAvailableYears();
-        const yearSelect = document.getElementById('year-select');
-        yearSelect.innerHTML = '';
-        
-        years.forEach(year => {
-            const option = document.createElement('option');
-            option.value = year;
-            option.textContent = year + '年';
-            if (year === currentYear) {
-                option.selected = true;
-            }
-            yearSelect.appendChild(option);
+// Load available years
+function loadAvailableYears() {
+    window.calendarAPI.getAvailableYears()
+        .then(years => {
+            const yearSelect = document.getElementById('year-select');
+            yearSelect.innerHTML = '';
+            
+            years.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year + '年';
+                if (year === currentYear) {
+                    option.selected = true;
+                }
+                yearSelect.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Failed to load available years:', error);
         });
-    } catch (error) {
-        console.error('加载年份失败:', error);
-    }
 }
 
-// 加载全年日历数据
-async function loadYearCalendarData(year) {
-    try {
-        const promises = [];
-        
-        // 加载12个月的数据
-        for (let month = 1; month <= 12; month++) {
-            promises.push(
-                window.calendarAPI.getCalendarData(year, month)
-                    .then(data => {
-                        yearCalendarData[month] = data;
-                    })
-            );
-        }
-        
-        await Promise.all(promises);
+// Load year calendar data
+function loadYearCalendarData(year) {
+    const promises = [];
+    
+    for (let month = 1; month <= 12; month++) {
+        const promise = window.calendarAPI.getCalendarData(year, month)
+            .then(data => {
+                yearCalendarData[month] = data;
+            })
+            .catch(error => {
+                console.error(`Failed to load data for ${year}-${month}:`, error);
+                yearCalendarData[month] = { events: {} };
+            });
+        promises.push(promise);
+    }
+    
+    Promise.all(promises).then(() => {
         renderYearCalendar();
-    } catch (error) {
-        console.error('加载年度日历数据失败:', error);
-    }
+        updateAllEventsLists();
+    });
 }
 
-// 加载用户事件
-async function loadUserEvents() {
-    try {
-        const events = await window.calendarAPI.getEvents();
-        userEvents = events || {};
-        renderYearCalendar(); // 重新渲染以显示用户事件
-    } catch (error) {
-        console.error('加载用户事件失败:', error);
-        userEvents = {};
-    }
+// Load user events
+function loadUserEvents() {
+    window.calendarAPI.getEvents()
+        .then(events => {
+            userEvents = {};
+            events.forEach(event => {
+                userEvents[event.date] = {
+                    title: event.title,
+                    type: event.event_type,
+                    color: EVENT_COLORS[event.event_type]
+                };
+            });
+            renderYearCalendar();
+            updateAllEventsLists();
+        })
+        .catch(error => {
+            console.error('Failed to load user events:', error);
+            userEvents = {};
+        });
 }
 
-// 渲染全年日历
+// Render year calendar
 function renderYearCalendar() {
     const yearGrid = document.getElementById('year-grid');
     yearGrid.innerHTML = '';
     
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    
-    // 渲染12个月
     for (let month = 1; month <= 12; month++) {
-        const monthData = yearCalendarData[month];
-        if (!monthData) continue;
-        
-        // 创建月份容器
-        const monthContainer = document.createElement('div');
-        monthContainer.className = 'month-container';
-        
-        // 创建迷你日历
-        const miniCalendar = document.createElement('div');
-        miniCalendar.className = 'mini-calendar';
-        
-        // 月份标题
-        const header = document.createElement('div');
-        header.className = 'mini-calendar-header';
-        header.textContent = `${MONTH_NAMES[month - 1]} '${String(currentYear).slice(-2)}`;
-        miniCalendar.appendChild(header);
-        
-        // 星期表头
-        const weekdays = document.createElement('div');
-        weekdays.className = 'mini-calendar-weekdays';
-        WEEKDAY_ABBR.forEach(day => {
-            const weekday = document.createElement('div');
-            weekday.className = 'mini-weekday';
-            weekday.textContent = day;
-            weekdays.appendChild(weekday);
-        });
-        miniCalendar.appendChild(weekdays);
-        
-        // 日期网格
-        const daysContainer = document.createElement('div');
-        daysContainer.className = 'mini-calendar-days';
-        
-        monthData.calendar.forEach(week => {
-            week.forEach(day => {
-                const dayElement = document.createElement('div');
-                dayElement.className = 'mini-day';
-                
-                if (day === 0) {
-                    // 空白单元格（其他月份的日期）
-                    dayElement.classList.add('other-month');
-                    dayElement.textContent = '';
-                } else {
-                    const dateStr = `${currentYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    dayElement.textContent = day;
-                    
-                    // 检查是否是今天
-                    if (dateStr === todayStr) {
-                        dayElement.classList.add('today');
-                    }
-                    
-                    // 检查预设事件
-                    if (monthData.preset_events[dateStr]) {
-                        const event = monthData.preset_events[dateStr];
-                        dayElement.classList.add(event.type);
-                    }
-                    
-                    // 检查用户自定义事件
-                    if (userEvents[dateStr]) {
-                        const event = userEvents[dateStr];
-                        dayElement.classList.add(event.type);
-                    }
-                    
-                    // 添加点击事件
-                    dayElement.addEventListener('click', () => openEventModal(dateStr));
-                    dayElement.dataset.date = dateStr;
-                }
-                
-                daysContainer.appendChild(dayElement);
-            });
-        });
-        
-        miniCalendar.appendChild(daysContainer);
-        monthContainer.appendChild(miniCalendar);
-        
-        // 创建事件列表
-        const eventsList = createEventsListForMonth(month);
-        monthContainer.appendChild(eventsList);
-        
+        const monthContainer = createMonthContainer(month);
         yearGrid.appendChild(monthContainer);
     }
+}
+
+// Create month container
+function createMonthContainer(month) {
+    const container = document.createElement('div');
+    container.className = 'month-container';
+    
+    // Month calendar
+    const monthCalendar = createMonthCalendar(month);
+    container.appendChild(monthCalendar);
+    
+    // Events list
+    const eventsList = createEventsListForMonth(month);
+    container.appendChild(eventsList);
+    
+    return container;
+}
+
+// Create month calendar
+function createMonthCalendar(month) {
+    const monthDiv = document.createElement('div');
+    monthDiv.className = 'month';
+    
+    // Month header
+    const header = document.createElement('div');
+    header.className = 'month-header';
+    header.textContent = MONTH_NAMES[month - 1];
+    monthDiv.appendChild(header);
+    
+    // Weekday headers
+    const weekdayHeader = document.createElement('div');
+    weekdayHeader.className = 'weekday-header';
+    WEEKDAY_ABBR.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'weekday';
+        dayHeader.textContent = day;
+        weekdayHeader.appendChild(dayHeader);
+    });
+    monthDiv.appendChild(weekdayHeader);
+    
+    // Calendar grid
+    const calendarGrid = document.createElement('div');
+    calendarGrid.className = 'calendar-grid';
+    
+    // Get month data
+    const monthData = yearCalendarData[month] || { events: {} };
+    
+    // Calculate first day and number of days
+    const firstDay = new Date(currentYear, month - 1, 1).getDay();
+    const daysInMonth = new Date(currentYear, month, 0).getDate();
+    
+    // Add empty cells for days before month starts
+    for (let i = 0; i < firstDay; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'day empty';
+        calendarGrid.appendChild(emptyDay);
+    }
+    
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'day';
+        dayDiv.textContent = day;
+        
+        const dateStr = `${currentYear}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+        
+        // Check for preset events (from API)
+        const presetEvent = monthData.events[dateStr];
+        if (presetEvent) {
+            dayDiv.classList.add('has-event', presetEvent.type);
+            dayDiv.style.backgroundColor = EVENT_COLORS[presetEvent.type];
+        }
+        
+        // Check for user events
+        const userEvent = userEvents[dateStr];
+        if (userEvent) {
+            dayDiv.classList.add('has-event', userEvent.type);
+            dayDiv.style.backgroundColor = EVENT_COLORS[userEvent.type];
+        }
+        
+        // Add click event
+        dayDiv.addEventListener('click', () => openEventModal(dateStr));
+        dayDiv.style.cursor = 'pointer';
+        
+        calendarGrid.appendChild(dayDiv);
+    }
+    
+    monthDiv.appendChild(calendarGrid);
+    return monthDiv;
 }
 
 // 为指定月份创建事件列表
@@ -234,12 +250,12 @@ function updateEventsListForMonth(month) {
     // 收集该月的所有事件
     const monthEvents = [];
     
-    // 收集预设事件
-    Object.keys(monthData.preset_events).forEach(dateStr => {
+    // 收集预设事件 (注意：现在使用 events 而不是 preset_events)
+    Object.keys(monthData.events).forEach(dateStr => {
         const eventMonth = parseInt(dateStr.split('-')[1]);
         const eventYear = parseInt(dateStr.split('-')[0]);
         if (eventMonth === month && eventYear === currentYear) {
-            const event = monthData.preset_events[dateStr];
+            const event = monthData.events[dateStr];
             const day = parseInt(dateStr.split('-')[2]);
             monthEvents.push({
                 date: dateStr,
@@ -375,7 +391,7 @@ function openEventModal(dateStr) {
     // 检查是否已有事件
     const month = parseInt(dateStr.split('-')[1]);
     const monthData = yearCalendarData[month];
-    const existingEvent = userEvents[dateStr] || (monthData && monthData.preset_events[dateStr]);
+    const existingEvent = userEvents[dateStr] || (monthData && monthData.events[dateStr]);
     
     if (existingEvent) {
         document.getElementById('event-title').value = existingEvent.title || '';
@@ -383,7 +399,7 @@ function openEventModal(dateStr) {
         
         // 如果是预设事件，禁用删除按钮
         const deleteBtn = document.getElementById('delete-event');
-        if (monthData && monthData.preset_events[dateStr]) {
+        if (monthData && monthData.events[dateStr]) {
             deleteBtn.style.display = 'none';
         } else {
             deleteBtn.style.display = 'inline-block';
@@ -424,86 +440,78 @@ function saveEvent() {
     }
     
     // 为日期范围内的每一天添加事件
+    const promises = [];
     const currentDate = new Date(start);
+    
     while (currentDate <= end) {
         const dateStr = currentDate.toISOString().split('T')[0];
-        userEvents[dateStr] = {
+        
+        const eventData = {
+            date: dateStr,
             title: title,
-            type: type,
-            color: EVENT_COLORS[type]
+            event_type: type
         };
+        
+        // 检查是否已存在事件
+        if (userEvents[dateStr]) {
+            // 更新现有事件
+            promises.push(
+                window.calendarAPI.updateEvent(userEvents[dateStr].id, eventData)
+                    .then(() => {
+                        userEvents[dateStr] = {
+                            title: title,
+                            type: type,
+                            color: EVENT_COLORS[type]
+                        };
+                    })
+            );
+        } else {
+            // 创建新事件
+            promises.push(
+                window.calendarAPI.createEvent(eventData)
+                    .then(response => {
+                        userEvents[dateStr] = {
+                            id: response.id,
+                            title: title,
+                            type: type,
+                            color: EVENT_COLORS[type]
+                        };
+                    })
+            );
+        }
+        
         currentDate.setDate(currentDate.getDate() + 1);
     }
     
-    // 保存到Firebase
-    saveUserEventsToFirebase();
-    
-    // 关闭模态窗口
-    closeEventModal();
+    Promise.all(promises)
+        .then(() => {
+            renderYearCalendar();
+            updateAllEventsLists();
+            closeEventModal();
+        })
+        .catch(error => {
+            console.error('保存事件失败:', error);
+            alert('保存失败，请检查网络连接');
+        });
 }
 
 // 删除事件
 function deleteEvent() {
     if (selectedDate && userEvents[selectedDate]) {
-        delete userEvents[selectedDate];
+        const eventId = userEvents[selectedDate].id;
         
-        // 保存到Firebase
-        saveUserEventsToFirebase();
-        
-        closeEventModal();
+        window.calendarAPI.deleteEvent(eventId)
+            .then(() => {
+                delete userEvents[selectedDate];
+                renderYearCalendar();
+                updateAllEventsLists();
+                closeEventModal();
+            })
+            .catch(error => {
+                console.error('删除事件失败:', error);
+                alert('删除失败，请检查网络连接');
+            });
     }
-}
-
-// 替换原来的saveUserEvents函数
-function saveUserEventsToFirebase() {
-    if (!eventsRef) return;
-    
-    // 直接设置整个events节点
-    eventsRef.set(userEvents).then(() => {
-        console.log('事件已保存到Firebase');
-    }).catch((error) => {
-        console.error('保存事件失败:', error);
-        alert('保存失败，请检查网络连接');
-    });
-}
-
-// 替换原来的loadUserEvents函数
-function loadUserEventsFromFirebase() {
-    if (!eventsRef) return;
-    
-    eventsRef.once('value').then((snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            userEvents = data;
-        } else {
-            userEvents = {};
-        }
-        // 加载完成后渲染日历
-        renderYearCalendar();
-        updateAllEventsLists();
-    }).catch((error) => {
-        console.error('加载事件失败:', error);
-        userEvents = {};
-        renderYearCalendar();
-        updateAllEventsLists();
-    });
-}
-
-// 设置Firebase实时监听器
-function setupFirebaseListeners() {
-    if (!eventsRef) return;
-    
-    eventsRef.on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            userEvents = data;
-        } else {
-            userEvents = {};
-        }
-        // 实时更新UI
-        renderYearCalendar();
-        updateAllEventsLists();
-    });
 }
 
 // 下载日历功能
