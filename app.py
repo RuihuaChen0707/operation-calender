@@ -1,28 +1,28 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
 import calendar
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 
-# Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://localhost/calendar_db')
+# 数据库配置
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///calendar.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# Database Model
+# 数据库模型
 class Event(db.Model):
-    __tablename__ = 'events'
-    
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(255), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
     date = db.Column(db.Date, nullable=False)
     event_type = db.Column(db.String(50), default='custom')
     color = db.Column(db.String(7), default='#5B9BD5')
-    description = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    description = db.Column(db.Text, default='')
+    
+    def __repr__(self):
+        return f'<Event {self.title} on {self.date}>'
     
     def to_dict(self):
         return {
@@ -61,34 +61,44 @@ EVENT_COLORS = {
     'custom': '#5B9BD5'
 }
 
-@app.before_first_request
-def create_tables():
-    """创建数据库表并插入预设事件"""
-    db.create_all()
+# 初始化数据库的标志
+_db_initialized = False
+
+def init_database():
+    """初始化数据库表并插入预设事件"""
+    global _db_initialized
+    if _db_initialized:
+        return
     
-    # 插入预设事件
-    for date_str, event_data in PRESET_EVENTS.items():
-        event_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        existing_event = Event.query.filter_by(date=event_date, title=event_data['title']).first()
+    with app.app_context():
+        db.create_all()
         
-        if not existing_event:
-            new_event = Event(
-                title=event_data['title'],
-                date=event_date,
-                event_type=event_data['type'],
-                color=event_data['color']
-            )
-            db.session.add(new_event)
-    
-    db.session.commit()
+        # 插入预设事件
+        for date_str, event_data in PRESET_EVENTS.items():
+            event_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            existing_event = Event.query.filter_by(date=event_date, title=event_data['title']).first()
+            
+            if not existing_event:
+                new_event = Event(
+                    title=event_data['title'],
+                    date=event_date,
+                    event_type=event_data['type'],
+                    color=event_data['color']
+                )
+                db.session.add(new_event)
+        
+        db.session.commit()
+        _db_initialized = True
 
 @app.route('/')
 def index():
+    init_database()  # 确保数据库已初始化
     return render_template('index.html')
 
 @app.route('/api/calendar/<int:year>/<int:month>')
 def get_calendar_data(year, month):
     """获取指定年月的日历数据"""
+    init_database()  # 确保数据库已初始化
     try:
         if year < 2025 or year > 2035 or month < 1 or month > 12:
             return jsonify({'error': 'Invalid year or month'}), 400
@@ -130,6 +140,7 @@ def get_calendar_data(year, month):
 
 @app.route('/api/events', methods=['GET', 'POST'])
 def handle_events():
+    init_database()  # 确保数据库已初始化
     if request.method == 'GET':
         try:
             events = Event.query.all()
@@ -177,6 +188,7 @@ def handle_events():
 
 @app.route('/api/events/<int:event_id>', methods=['PUT', 'DELETE'])
 def handle_event(event_id):
+    init_database()  # 确保数据库已初始化
     if request.method == 'PUT':
         try:
             event = Event.query.get_or_404(event_id)
