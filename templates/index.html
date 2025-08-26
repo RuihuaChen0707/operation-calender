@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互式日历 2025-2035</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="calendar-header">
+            <h1>交互式日历</h1>
+            <div class="navigation">
+                <div class="year-selector">
+                    <label for="year-select">年份：</label>
+                    <select id="year-select">
+                        <!-- 年份选项将通过JavaScript动态填充 -->
+                    </select>
+                </div>
+                <button id="download-btn" class="download-btn">下载日历</button>
+            </div>
+        </header>
+
+        <main class="calendar-main">
+            <!-- 全年网格容器 -->
+            <div class="year-grid" id="year-grid">
+                <!-- 12个月的迷你日历将通过JavaScript动态生成 -->
+            </div>
+
+            <div class="legend">
+                <h3>图例</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #5B9BD5;"></span>
+                        <span>学校假期</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #7030A0;"></span>
+                        <span>公共假期</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #00B050;"></span>
+                        <span>伊斯兰假期</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #FF0000;"></span>
+                        <span>基督教假期</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: #FFFF00;"></span>
+                        <span>返校期</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 事件编辑模态窗口 -->
+    <div id="event-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>编辑事件</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="event-form">
+                    <div class="form-group">
+                        <label for="event-title">事件标题：</label>
+                        <input type="text" id="event-title" name="title" placeholder="输入事件标题（可选）">
+                    </div>
+                    <div class="form-group">
+                        <label for="event-type">事件类型：</label>
+                        <select id="event-type" name="type" required>
+                            <option value="school">学校假期</option>
+                            <option value="public">公共假期</option>
+                            <option value="islamic">伊斯兰假期</option>
+                            <option value="christian">基督教假期</option>
+                            <option value="back_to_school">返校期</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="start-date">开始日期：</label>
+                        <input type="date" id="start-date" name="start_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="end-date">结束日期：</label>
+                        <input type="date" id="end-date" name="end_date" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-save">保存</button>
+                        <button type="button" id="delete-event" class="btn btn-delete">删除</button>
+                        <button type="button" class="btn btn-cancel">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

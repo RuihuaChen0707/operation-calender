@@ -1,0 +1,578 @@
+/* 基础样式重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', 'Helvetica', sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+/* 头部样式 */
+.calendar-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.calendar-header h1 {
+    font-size: 2.5em;
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+.navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+}
+
+.year-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.year-selector label {
+    font-weight: bold;
+    color: #2c3e50;
+    font-size: 18px;
+}
+
+#year-select {
+    padding: 10px 15px;
+    border: 2px solid #bdc3c7;
+    border-radius: 4px;
+    font-size: 18px;
+    background-color: white;
+    cursor: pointer;
+}
+
+#year-select:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.download-btn {
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-weight: bold;
+}
+
+.download-btn:hover {
+    background-color: #229954;
+}
+
+/* 全年网格布局 */
+.year-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+    padding: 20px;
+}
+
+/* 月份容器样式 - 包含日历和事件列表 */
+.month-container {
+    display: flex;
+    gap: 15px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.month-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* 迷你月度日历样式 */
+.mini-calendar {
+    flex: 1;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    min-width: 200px;
+}
+
+/* 月份标题 - 红色背景 */
+.mini-calendar-header {
+    background-color: #DC143C;
+    color: white;
+    text-align: center;
+    padding: 8px;
+    font-weight: bold;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+/* 星期表头 */
+.mini-calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+}
+
+.mini-weekday {
+    text-align: center;
+    padding: 4px 2px;
+    font-size: 10px;
+    font-weight: bold;
+    color: #666;
+    border-right: 1px solid #eee;
+}
+
+.mini-weekday:last-child {
+    border-right: none;
+}
+
+/* 日期网格 */
+.mini-calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+}
+
+.mini-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    border-right: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.mini-day:nth-child(7n) {
+    border-right: none;
+}
+
+.mini-day:hover {
+    background-color: #f0f0f0;
+    transform: scale(1.1);
+    z-index: 1;
+}
+
+.mini-day.other-month {
+    color: #ccc;
+    background-color: #fafafa;
+}
+
+.mini-day.today {
+    background-color: #3498db;
+    color: white;
+    font-weight: bold;
+}
+
+/* 事件颜色样式 */
+.mini-day.school {
+    background-color: #5B9BD5 !important;
+    color: white;
+}
+
+.mini-day.public {
+    background-color: #7030A0 !important;
+    color: white;
+}
+
+.mini-day.islamic {
+    background-color: #00B050 !important;
+    color: white;
+}
+
+.mini-day.christian {
+    background-color: #FF0000 !important;
+    color: white;
+}
+
+.mini-day.back_to_school {
+    background-color: #FFFF00 !important;
+    color: black;
+}
+
+/* 事件列表样式 */
+.events-list {
+    flex: 1;
+    min-width: 150px;
+    max-width: 200px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 12px;
+}
+
+.events-list-header {
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    text-align: center;
+    font-size: 13px;
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 5px;
+}
+
+.events-list-content {
+    max-height: 180px;
+    overflow-y: auto;
+    line-height: 1.4;
+}
+
+.event-item {
+    margin-bottom: 6px;
+    padding: 4px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.event-color-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.event-item.school {
+    background-color: rgba(91, 155, 213, 0.1);
+    border-left: 3px solid #5B9BD5;
+}
+
+.event-item.public {
+    background-color: rgba(112, 48, 160, 0.1);
+    border-left: 3px solid #7030A0;
+}
+
+.event-item.islamic {
+    background-color: rgba(0, 176, 80, 0.1);
+    border-left: 3px solid #00B050;
+}
+
+.event-item.christian {
+    background-color: rgba(255, 0, 0, 0.1);
+    border-left: 3px solid #FF0000;
+}
+
+.event-item.back_to_school {
+    background-color: rgba(255, 255, 0, 0.1);
+    border-left: 3px solid #FFFF00;
+}
+
+.event-date {
+    font-weight: bold;
+    color: #666;
+    margin-right: 4px;
+}
+
+.event-title {
+    flex: 1;
+    word-wrap: break-word;
+}
+
+.no-events {
+    color: #999;
+    font-style: italic;
+    text-align: center;
+    padding: 20px 10px;
+}
+
+/* 图例样式 */
+.legend {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    margin-top: 20px;
+}
+
+.legend h3 {
+    text-align: center;
+    margin-bottom: 15px;
+    color: #2c3e50;
+    font-size: 1.4em;
+}
+
+.legend-items {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+/* 模态窗口样式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    animation: fadeIn 0.3s;
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    animation: slideIn 0.3s;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.close:hover {
+    color: #e74c3c;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #bdc3c7;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-weight: bold;
+}
+
+.btn-save {
+    background-color: #27ae60;
+    color: white;
+}
+
+.btn-save:hover {
+    background-color: #229954;
+}
+
+.btn-delete {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #c0392b;
+}
+
+.btn-cancel {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.btn-cancel:hover {
+    background-color: #7f8c8d;
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .year-grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(6, 1fr);
+    }
+    
+    .month-container {
+        flex-direction: column;
+    }
+    
+    .events-list {
+        max-width: none;
+        min-width: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .year-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(12, 1fr);
+        gap: 15px;
+        padding: 10px;
+    }
+    
+    .navigation {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .calendar-header h1 {
+        font-size: 2em;
+    }
+    
+    .month-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .mini-calendar-header {
+        font-size: 12px;
+        padding: 6px;
+    }
+    
+    .mini-day {
+        font-size: 9px;
+    }
+    
+    .events-list {
+        max-height: 120px;
+    }
+    
+    .legend-items {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .mini-calendar-header {
+        font-size: 10px;
+        padding: 4px;
+    }
+    
+    .mini-day {
+        font-size: 8px;
+    }
+    
+    .mini-weekday {
+        font-size: 8px;
+        padding: 2px 1px;
+    }
+    
+    .events-list {
+        font-size: 10px;
+        max-height: 100px;
+    }
+    
+    .event-item {
+        font-size: 9px;
+        margin-bottom: 4px;
+        padding: 3px 4px;
+    }
+}
